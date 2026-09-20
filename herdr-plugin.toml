@@ -31,9 +31,16 @@ title = "Termaxa: show the record"
 contexts = ["pane", "workspace"]
 command = ["./bin/open-record.sh"]
 
-# When an agent goes blocked, look at the project's Termaxa record: if the
-# last entry is a refusal from the last minute, put its reason on the
-# sidebar state and open the record as an overlay.
+# The record is the event source: follow it for every workspace project and
+# react to a refusal the moment it is written. Measured Sep 20, 2026: under
+# `wrap` a refusal does not change the agent's detected status, so a status
+# hook alone never fires.
+[[startup]]
+command = ["./bin/watch.sh"]
+
+# And the status hook as well, for the harnesses where a refusal does stop
+# the agent (Codex through its hook: an ask it cannot answer is a refusal).
+# Whichever fires first reports; the other sees the same entry and skips it.
 [[events]]
 on = "pane.agent_status_changed"
 command = ["./bin/on-status.sh"]

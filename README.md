@@ -11,15 +11,18 @@ the gate for the shell commands AI coding agents run. Three things:
   cannot reach it.
 - **The record, live.** A pane running `termaxa log --follow` in the
   workspace's project: every verdict as it happens.
-- **Why the agent stopped.** Whenever a pane settles (blocked, idle or
-  done), the plugin reads the last entry of that project's Termaxa record;
-  if it is a refusal from the last 90 seconds, the reason goes on the pane
-  (`termaxa deny: rm -rf ./scratch — Recursive force delete …`, with
-  `termaxa deny` as its state label) and the record opens as an overlay.
-  Measured in a live session: under `wrap` a refusal does not block the
-  agent — it reports the refusal and finishes its turn, so Herdr sees
-  `idle`, which is why the hook does not key on `blocked` alone. A pane
-  whose record has nothing recent is left exactly as Herdr showed it.
+- **Why the agent stopped.** A watcher started with Herdr follows each
+  workspace project's Termaxa record and reacts to a refusal the moment it
+  is written: the pane gets `termaxa deny` as its state label and the
+  reason as its message (`termaxa deny: rm -rf ./scratch — Recursive force
+  delete …`), and the record opens as an overlay. Measured Sep 20, 2026 in
+  a live session, this is why the watcher exists rather than a status hook
+  alone: under `wrap` a refusal does not change the agent's detected
+  status — Claude Code reports the refusal and carries on, or opens its own
+  menu and waits — so `pane.agent_status_changed` never fired for three
+  refused deletes. The status hook is still registered for the harnesses
+  where a refusal does stop the agent; whichever sees the entry first
+  reports it.
 
 Requires `termaxa` installed (`brew install termaxa/tap/termaxa`,
 `cargo install termaxa`, or a release binary) and Herdr 0.9 or later.
@@ -63,7 +66,11 @@ native file tools only where a path rule names the file; the residues are in
 - `bin/gate.sh` — the gate action (`claude` or `codex`).
 - `bin/record.sh` — the record pane.
 - `bin/open-record.sh` — the open-record action.
-- `bin/on-status.sh` — the `pane.agent_status_changed` hook.
+- `bin/watch.sh` — the startup watcher: follows each project's record and
+  reports refusals. One per machine (a lock under `$XDG_RUNTIME_DIR`), one
+  follower per project.
+- `bin/on-status.sh` — the `pane.agent_status_changed` hook, the secondary
+  trigger.
 - `bin/lib.sh` — JSON field extraction with `sed`, no python or jq needed.
 
 Apache-2.0, like Termaxa.
