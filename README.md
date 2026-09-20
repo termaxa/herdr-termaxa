@@ -10,12 +10,15 @@ the gate for the shell commands AI coding agents run. Three things:
   then `codex`); Codex runs its shell by absolute path and the wrapper
   cannot reach it.
 - **The record, live.** A pane running `termaxa log --follow` in the
-  workspace's project: every verdict as it happens.
+  workspace's project: every verdict as it happens. **Termaxa: show the
+  record** opens it as an overlay over the active pane; a refusal opens it
+  as a split beside the agent's pane.
 - **Why the agent stopped.** A watcher started with Herdr follows each
   workspace project's Termaxa record and reacts to a refusal the moment it
   is written: the pane gets `termaxa deny` as its state label and the
   reason as its message (`termaxa deny: rm -rf ./scratch — Recursive force
-  delete …`), and the record opens as an overlay. Measured Sep 20, 2026 in
+  delete …`), and the record opens in a split below the pane that caused
+  it. Measured Sep 20, 2026 in
   a live session, this is why the watcher exists rather than a status hook
   alone: under `wrap` a refusal does not change the agent's detected
   status — Claude Code reports the refusal and carries on, or opens its own

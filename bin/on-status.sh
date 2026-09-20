@@ -48,10 +48,10 @@ h pane report-agent "$pane" --source termaxa --agent "$label" --state "$state" \
   --message "termaxa ${decision}: ${cmd:0:60} — ${reason:0:140}" >/dev/null \
   || echo "report-agent failed for $pane" >&2
 h pane report-metadata "$pane" --source termaxa \
-  --state-label "termaxa ${decision}" >/dev/null \
-  || echo "report-metadata failed for $pane (older herdr?)" >&2
+  --state-label "termaxa=${decision}" >/dev/null \
+  || echo "report-metadata failed for $pane" >&2
 # The record, as an overlay, so "why did it stop?" is one glance away.
-ws=$(h pane get "$pane" 2>/dev/null | field workspace_id)
-h plugin pane open --plugin termaxa.gate --entrypoint record --placement overlay ${ws:+--workspace "$ws"} >/dev/null \
-  || echo "pane open failed for workspace ${ws:-?}" >&2
+h plugin pane open --plugin termaxa.gate --entrypoint record \
+  --placement split --target-pane "$pane" --direction down >/dev/null \
+  || echo "pane open failed for $pane" >&2
 echo "termaxa ${decision} reported on $pane: ${cmd:0:60}"

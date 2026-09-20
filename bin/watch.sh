@@ -65,16 +65,23 @@ follow_project() { # follow_project PROJECT_DIR
       [ -n "$cwd" ] || cwd="$proj"
       pane=$(pane_for_cwd "$cwd")
       [ -n "$pane" ] || continue
+      # `--state-label` is STATUS=TEXT (the CLI says so; measured Sep 20, 2026).
       h pane report-metadata "$pane" --source termaxa \
-        --state-label "termaxa ${decision}" >/dev/null \
+        --state-label "termaxa=${decision}" >/dev/null \
         || echo "report-metadata failed for $pane" >&2
       h pane report-agent "$pane" --source termaxa --agent "$(agent_of "$pane")" \
         --state "$(state_of "$pane")" \
         --message "termaxa ${decision}: ${cmd:0:60} — ${reason:0:140}" >/dev/null \
         || echo "report-agent failed for $pane" >&2
-      ws=$(h pane get "$pane" 2>/dev/null | field workspace_id)
-      h plugin pane open --plugin termaxa.gate --entrypoint record --placement overlay ${ws:+--workspace "$ws"} >/dev/null \
-        || echo "pane open failed for ${ws:-?}" >&2
+      # An overlay targets the ACTIVE pane and refuses --workspace; a split
+      # targets an existing pane by --target-pane. The refusal happened in
+      # `$pane`, so split beside it and let the record land next to the
+      # agent that caused it (measured Sep 20, 2026: the overlay form was
+      # refused with "overlay and popup plugin panes target the active
+      # pane").
+      h plugin pane open --plugin termaxa.gate --entrypoint record \
+        --placement split --target-pane "$pane" --direction down >/dev/null \
+        || echo "pane open failed for $pane" >&2
       echo "termaxa ${decision} on ${pane}: ${cmd:0:60}"
     done
   ) &
