@@ -11,12 +11,15 @@ the gate for the shell commands AI coding agents run. Three things:
   cannot reach it.
 - **The record, live.** A pane running `termaxa log --follow` in the
   workspace's project: every verdict as it happens.
-- **Why the pane went red.** When Herdr marks a pane *blocked*, the plugin
-  reads the last entry of that project's Termaxa record; if it is a refusal
-  from the last 90 seconds, the reason goes on the pane's state
-  (`termaxa deny: rm -rf ./scratch — Recursive force delete …`) and the
-  record opens as an overlay. An agent blocked for its own reasons is left
-  as Herdr showed it.
+- **Why the agent stopped.** Whenever a pane settles (blocked, idle or
+  done), the plugin reads the last entry of that project's Termaxa record;
+  if it is a refusal from the last 90 seconds, the reason goes on the pane
+  (`termaxa deny: rm -rf ./scratch — Recursive force delete …`, with
+  `termaxa deny` as its state label) and the record opens as an overlay.
+  Measured in a live session: under `wrap` a refusal does not block the
+  agent — it reports the refusal and finishes its turn, so Herdr sees
+  `idle`, which is why the hook does not key on `blocked` alone. A pane
+  whose record has nothing recent is left exactly as Herdr showed it.
 
 Requires `termaxa` on `PATH` (`brew install termaxa/tap/termaxa`,
 `cargo install termaxa`, or a release binary) and Herdr 0.9 or later.
