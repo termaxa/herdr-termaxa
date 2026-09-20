@@ -22,8 +22,9 @@ pane=$(printf '%s' "$json" | field pane_id)
 cwd=$(pane_cwd "$pane"); [ -n "$cwd" ] || exit 0
 proj=$(project_of "$cwd")
 [ -d "$proj/.termaxa" ] || exit 0
-command -v termaxa >/dev/null || exit 0
-last=$(cd "$proj" && termaxa log -n 1 --json 2>/dev/null | tail -n 1)
+have_termaxa || { echo "termaxa not found on PATH or in the usual places" >&2; exit 0; }
+have_herdr || { echo "herdr not found: HERDR_BIN_PATH unset and not on PATH" >&2; exit 1; }
+last=$(cd "$proj" && t log -n 1 --json 2>/dev/null | tail -n 1)
 [ -n "$last" ] || exit 0
 decision=$(printf '%s' "$last" | field decision)
 case "$decision" in deny|ask) ;; *) exit 0 ;; esac
@@ -37,16 +38,20 @@ mkdir -p "$mark"
 printf '%s' "$ts_ms" > "$mark/$pane"
 reason=$(printf '%s' "$last" | field reason)
 cmd=$(printf '%s' "$last" | field command)
-label=$(herdr pane get "$pane" 2>/dev/null | field agent); [ -n "$label" ] || label="agent"
+label=$(h pane get "$pane" 2>/dev/null | field agent); [ -n "$label" ] || label="agent"
 # Keep the state Herdr detected and put the reason beside it: a refusal the
 # agent already reported is not the agent waiting for input. Only a refusal
 # while the agent is genuinely blocked stays blocked.
 state="$status"
 case "$state" in blocked) ;; *) state="idle" ;; esac
-herdr pane report-agent "$pane" --source termaxa --agent "$label" --state "$state" \
-  --message "termaxa ${decision}: ${cmd:0:60} — ${reason:0:140}" >/dev/null 2>&1 || true
-herdr pane report-metadata "$pane" --source termaxa \
-  --state-label "termaxa ${decision}" >/dev/null 2>&1 || true
+h pane report-agent "$pane" --source termaxa --agent "$label" --state "$state" \
+  --message "termaxa ${decision}: ${cmd:0:60} — ${reason:0:140}" >/dev/null \
+  || echo "report-agent failed for $pane" >&2
+h pane report-metadata "$pane" --source termaxa \
+  --state-label "termaxa ${decision}" >/dev/null \
+  || echo "report-metadata failed for $pane (older herdr?)" >&2
 # The record, as an overlay, so "why did it stop?" is one glance away.
-ws=$(herdr pane get "$pane" 2>/dev/null | field workspace_id)
-herdr plugin pane open --plugin termaxa.gate --entrypoint record --placement overlay ${ws:+--workspace "$ws"} >/dev/null 2>&1 || true
+ws=$(h pane get "$pane" 2>/dev/null | field workspace_id)
+h plugin pane open --plugin termaxa.gate --entrypoint record --placement overlay ${ws:+--workspace "$ws"} >/dev/null \
+  || echo "pane open failed for workspace ${ws:-?}" >&2
+echo "termaxa ${decision} reported on $pane: ${cmd:0:60}"

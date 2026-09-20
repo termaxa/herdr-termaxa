@@ -21,9 +21,14 @@ the gate for the shell commands AI coding agents run. Three things:
   `idle`, which is why the hook does not key on `blocked` alone. A pane
   whose record has nothing recent is left exactly as Herdr showed it.
 
-Requires `termaxa` on `PATH` (`brew install termaxa/tap/termaxa`,
+Requires `termaxa` installed (`brew install termaxa/tap/termaxa`,
 `cargo install termaxa`, or a release binary) and Herdr 0.9 or later.
-Linux and macOS.
+Linux and macOS. Herdr runs plugin commands with `HERDR_BIN_PATH` set and
+its own PATH, not your login PATH, so the scripts resolve `herdr` from
+`HERDR_BIN_PATH` and look for `termaxa` on PATH and then in
+`~/.local/bin`, `/usr/local/bin`, `/opt/homebrew/bin` and `~/.cargo/bin`.
+If yours is somewhere else, a symlink into one of those is enough; when it
+cannot be found the hook says so in `herdr plugin log list`.
 
 ## Install
 
