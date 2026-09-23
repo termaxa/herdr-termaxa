@@ -23,10 +23,18 @@ have_termaxa || { echo "termaxa not found; the watcher has nothing to follow" >&
 # `scan` re-ran and started a second follower).
 RUN="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/termaxa-herdr-$(id -u)"
 mkdir -p "$RUN" 2>/dev/null
+# The newer watcher wins. `herdr server stop` does not kill the processes
+# Herdr spawned, so the previous session's watcher survives as an orphan
+# holding the lock and running the script it was started with (measured
+# Sep 24, 2026: the fresh one exited with "already running"). The pid in
+# the lock is ours; it is told to stop, and the lock is taken over.
 if ! mkdir "$RUN/watcher.lock" 2>/dev/null; then
-  if [ -r "$RUN/watcher.pid" ] && kill -0 "$(cat "$RUN/watcher.pid" 2>/dev/null)" 2>/dev/null; then
-    echo "another termaxa watcher is already running; this one exits" >&2
-    exit 0
+  old=$(cat "$RUN/watcher.pid" 2>/dev/null)
+  if [ -n "$old" ] && [ "$old" != "$$" ] && kill -0 "$old" 2>/dev/null; then
+    echo "replacing the previous termaxa watcher (pid $old)"
+    kill "$old" 2>/dev/null
+    sleep 1
+    kill -9 "$old" 2>/dev/null || true
   fi
   rm -rf "$RUN/watcher.lock" 2>/dev/null
   mkdir "$RUN/watcher.lock" 2>/dev/null || { echo "cannot take the watcher lock" >&2; exit 0; }
@@ -131,7 +139,17 @@ scan() {
 }
 
 echo "termaxa watcher started"
+misses=0
 while :; do
-  scan
+  # A watcher whose Herdr has gone exits, so a stopped server does not
+  # leave a follower behind; three missed polls, thirty seconds, is the
+  # allowance for a restart.
+  if h workspace list >/dev/null 2>&1; then
+    misses=0
+    scan
+  else
+    misses=$((misses + 1))
+    [ "$misses" -ge 3 ] && { echo "herdr is gone; the watcher exits"; exit 0; }
+  fi
   sleep 10
 done
