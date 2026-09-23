@@ -67,7 +67,9 @@ native file tools only where a path rule names the file; the residues are in
 
 - `herdr-plugin.toml` — the manifest: three actions, one event hook, one pane.
 - `bin/gate.sh` — the gate action (`claude` or `codex`).
-- `bin/record.sh` — the record pane.
+- `bin/record.sh` — the record pane. A plugin pane starts in the plugin
+  root, so it takes the project from the launch context (`workspace_cwd`)
+  and the openers pass `--cwd` as well.
 - `bin/open-record.sh` — the open-record action.
 - `bin/watch.sh` — the startup watcher: follows each project's record and
   reports refusals. One per machine (a lock under `$XDG_RUNTIME_DIR`), one

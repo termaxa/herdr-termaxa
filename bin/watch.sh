@@ -65,9 +65,12 @@ follow_project() { # follow_project PROJECT_DIR
       [ -n "$cwd" ] || cwd="$proj"
       pane=$(pane_for_cwd "$cwd")
       [ -n "$pane" ] || continue
-      # `--state-label` is STATUS=TEXT (the CLI says so; measured Sep 20, 2026).
+      # `--state-label` is STATUS=TEXT and STATUS must be one of Herdr's own
+      # states (`unknown state label: termaxa`, measured Sep 20, 2026): the
+      # text goes on the state the pane is in.
+      local st; st=$(state_of "$pane")
       h pane report-metadata "$pane" --source termaxa \
-        --state-label "termaxa=${decision}" >/dev/null \
+        --state-label "${st}=termaxa ${decision}" >/dev/null \
         || echo "report-metadata failed for $pane" >&2
       h pane report-agent "$pane" --source termaxa --agent "$(agent_of "$pane")" \
         --state "$(state_of "$pane")" \
@@ -79,8 +82,9 @@ follow_project() { # follow_project PROJECT_DIR
       # agent that caused it (measured Sep 20, 2026: the overlay form was
       # refused with "overlay and popup plugin panes target the active
       # pane").
+      # `--cwd`: a plugin pane starts in the plugin root otherwise.
       h plugin pane open --plugin termaxa.gate --entrypoint record \
-        --placement split --target-pane "$pane" --direction down >/dev/null \
+        --placement split --target-pane "$pane" --direction down --cwd "$proj" >/dev/null \
         || echo "pane open failed for $pane" >&2
       echo "termaxa ${decision} on ${pane}: ${cmd:0:60}"
     done
